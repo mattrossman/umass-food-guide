@@ -1,5 +1,3 @@
-var DataFrame = dfjs.DataFrame;
-
 var qual_props = {
 	'Dish':'data-dish-name',
 	'Serving size':'data-serving-size'
@@ -56,7 +54,7 @@ function getElementData(element){
 }
 
 function getURL(loc){
-	return "http://umassdining.com/locations-menus/"+loc+"/menu";
+	return "https://umassdining.com/locations-menus/"+loc+"/menu";
 }
 
 var exJSON;
@@ -65,8 +63,11 @@ function getLocData(loc){
 	$.get(getURL(loc), function(data){
 		// The first element of each 'lightbox-nutrition' <li> is an <a>
 		// with the nutritional data attributes
+		var dishObj;
 		var locObj = $('.lightbox-nutrition :first-child',data).map(function(){
-			return getElementData(this);
+			dishObj =  getElementData(this);
+			dishObj['Location'] = loc;
+			return dishObj;
 		}).get();
 		appendData(locObj);
 	});
@@ -74,7 +75,7 @@ function getLocData(loc){
 
 function appendData(data){
 	foodObj = foodObj.concat(data)
-    $("#example-table").tabulator("setData", foodObj);
+    $("#food-table").tabulator("setData", foodObj);
 }
 
 
@@ -87,12 +88,13 @@ $(document).ready(function(){
 	var unitSorter = function(a,b){
 		return a.baseScalar-b.baseScalar;
 	}
-	$("#example-table").tabulator({
+	$("#food-table").tabulator({
 	    //height:205, // set height of table
 	    fitColumns:true, //fit columns to width of table (optional)
 	    columns:[ //Define Table Columns
 	        {title:"Dish", field:"Dish"},
 	        {title:"Serving size", field:"Serving size"},
+	        {title:"Location", field:"Location"},
 	        {title:"Meal", field:"Meal"},
 	        {title:"Section", field:"Section"},
 	        {title:"Calories", field:"Calories", align:"left"},
