@@ -45,7 +45,7 @@ function getURL(loc){
 	return "http://umassdining.com/locations-menus/"+loc+"/menu";
 }
 
-function getLocData(loc){
+function addLocData(loc){
 	$.get(getURL(loc), function(data){
 		// The first element of each 'lightbox-nutrition' <li> is an <a>
 		// with the nutritional data attributes
@@ -71,37 +71,37 @@ $(document).ready(function(){
 		active:false
 	});
 	tableData = [];
-	getLocData('Hampshire');
-	//getLocData('Berkshire');
-	//getLocData('Worcester');
-	//getLocData('Franklin');
+	addLocData('Hampshire');
+	//addLocData('Berkshire');
+	//addLocData('Worcester');
+	//addLocData('Franklin');
 	var unitSorter = function(a,b){
 		return a.baseScalar-b.baseScalar;
 	}
 	allColumns = [
-		{title:"Dish", field:"data-dish-name"},
-		{title:"Serving size", field:"data-serving-size"},
-		{title:"Location", field:"data-location"},
-		{title:"Meal", field:"data-meal"},
-		{title:"Section", field:"data-section"},
-		{title:"Calories", field:"data-calories", align:"left"},
-		{title:"Cholesterol", field:"data-cholesterol", align:"left", sorter:unitSorter},
+		{title:"Dish", 			field:"data-dish-name"},
+		{title:"Serving size", 	field:"data-serving-size", headerSort:false},
+		{title:"Location", 		field:"data-location"},
+		{title:"Meal", 			field:"data-meal"},
+		{title:"Section",		field:"data-section"},
+		{title:"Calories", 		field:"data-calories", align:"left"},
+		{title:"Cholesterol", 	field:"data-cholesterol", align:"left", sorter:unitSorter},
 		{title:"Dietary fiber", field:"data-dietary-fiber", align:"left", sorter:unitSorter},
-		{title:"Protein", field:"data-protein", align:"left", sorter:unitSorter},
+		{title:"Protein", 		field:"data-protein", align:"left", sorter:unitSorter},
 		{title:"Saturated fat", field:"data-sat-fat", align:"left", sorter:unitSorter},
-		{title:"Sodium", field:"data-sodium", align:"left", sorter:unitSorter},
-		{title:"Sugar", field:"data-sugars", align:"left", sorter:unitSorter},
+		{title:"Sodium", 		field:"data-sodium", align:"left", sorter:unitSorter},
+		{title:"Sugar", 		field:"data-sugars", align:"left", sorter:unitSorter},
 		{title:"Carbohydrates", field:"data-total-carb", align:"left", sorter:unitSorter},
-		{title:"Total fat", field:"data-total-fat", align:"left", sorter:unitSorter},
-		{title:"Trans fat", field:"data-trans-fat", align:"left", sorter:unitSorter}
+		{title:"Total fat", 	field:"data-total-fat", align:"left", sorter:unitSorter},
+		{title:"Trans fat", 	field:"data-trans-fat", align:"left", sorter:unitSorter}
 	]
-	var activeColumns = ["Dish", "Serving size", "Meal", "Section", "Calories"]
+	var activeColumns = ["Dish", "Calories", "Serving size", "Meal", "Section"]
 	$("#food-table").tabulator({
 	    //height:205, // set height of table
-	    fitColumns:true, //fit columns to width of table (optional)
-	    columns:$.grep(allColumns,function(obj,i){
-	    	// Filter only the column object configuations with titles in the active list
-	    	return $.inArray(obj.title,activeColumns)!=-1
+	    fitColumns:false, //fit columns to width of table (optional)
+    	// Find the column config objects with the desired titles
+	    columns:$.map(activeColumns,function(prop){
+	    	return allColumns.find(col => col.title === prop)
 	    })
     });
 });
