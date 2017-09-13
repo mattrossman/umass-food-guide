@@ -17,11 +17,11 @@ var quant_attrs = [
 ]
 
 function getMeal(element){
-	return $(element).parent().parent().prevAll('h2').first().text()
+	return $(element).parent().parent().prevAll('h2').first().text();
 }
 
 function getSection(element){
-	return $(element).parent().prevAll('.menu_category_name').first().text()
+	return $(element).parent().prevAll('.menu_category_name').first().text();
 }
 
 // Get the nutritional data from a given <a> element
@@ -60,9 +60,19 @@ function addLocData(loc){
 }
 
 function appendData(data){
-	tableData = tableData.concat(data)
+	tableData = tableData.concat(data);
     $("#food-table").tabulator("setData", tableData);
 }
+
+function resetData(){
+	tableData = [];
+}
+
+function getLocData(loc){
+	resetData();
+	addLocData(loc);
+}
+
 
 $(document).ready(function(){
 	$( "#accordion" ).accordion({
@@ -70,14 +80,13 @@ $(document).ready(function(){
 		collapsible:true,
 		active:false
 	});
-	tableData = [];
-	addLocData('Hampshire');
-	//addLocData('Berkshire');
-	//addLocData('Worcester');
-	//addLocData('Franklin');
+	$("#dc-selector").change(function(){
+		getLocData(this.value);
+	})
+	//getLocData('Hampshire');
 	var unitSorter = function(a,b){
 		return a.baseScalar-b.baseScalar;
-	}
+	};
 	allColumns = [
 		{title:"Dish", 			field:"data-dish-name"},
 		{title:"Serving size", 	field:"data-serving-size", headerSort:false},
@@ -94,7 +103,7 @@ $(document).ready(function(){
 		{title:"Carbohydrates", field:"data-total-carb", align:"left", sorter:unitSorter},
 		{title:"Total fat", 	field:"data-total-fat", align:"left", sorter:unitSorter},
 		{title:"Trans fat", 	field:"data-trans-fat", align:"left", sorter:unitSorter}
-	]
+	];
 	var activeColumns = ["Dish", "Calories", "Serving size", "Meal", "Section"]
 	$("#food-table").tabulator({
 	    //height:205, // set height of table
