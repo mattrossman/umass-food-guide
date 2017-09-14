@@ -1,31 +1,36 @@
 var qual_attrs = [
-'data-dish-name',
-'data-serving-size'
+"data-dish-name",
+"data-serving-size"
 ]
 
 var quant_attrs = [
-'data-calories',
-'data-cholesterol',
-'data-dietary-fiber',
-'data-protein',
-'data-sat-fat',
-'data-sodium',
-'data-sugars',
-'data-total-carb',
-'data-total-fat',
-'data-trans-fat'
+"data-calories",
+"data-cholesterol",
+"data-dietary-fiber",
+"data-protein",
+"data-sat-fat",
+"data-sodium",
+"data-sugars",
+"data-total-carb",
+"data-total-fat",
+"data-trans-fat"
 ]
 
-function getMeal(element){
-	return $(element).parent().parent().prevAll('h2').first().text()
+// I don't know what this stands for, but it's used in the online menu
+// as an ID for each dining common
+var tids = {
+	Worcester:1,
+	Franklin:2,
+	Hampshire:3,
+	Berkshire:4
 }
 
-function getSection(element){
-	return $(element).parent().prevAll('.menu_category_name').first().text()
-}
+function getKey(obj,value) {
+  return Object.keys(obj).find(key => obj[key] === value);
+};
 
-// Get the nutritional data from a given <a> element
-function getElementData(element){
+// Get the implicit nutritional data from a given <a> element
+function getImplicitData(element){
 	var payload = {}
 	// Save the qualitative properties as regular strings
 	$.each(qual_attrs, function(i,attr){
@@ -35,9 +40,6 @@ function getElementData(element){
 	$.each(quant_attrs, function(i,attr){
 		payload[attr] = Qty($(element).attr(attr));
 	});
-	// The meal and section properties are not implicit to the element
-	payload['data-meal'] = getMeal(element);
-	payload['data-section'] = getSection(element);
 	return payload;
 }
 
@@ -45,23 +47,54 @@ function getURL(loc){
 	return "http://umassdining.com/locations-menus/"+loc+"/menu";
 }
 
-function addLocData(loc){
-	$.get(getURL(loc), function(data){
+function getNewURL(tid, date){
+	return "http://umassdining.com/foodpro-menu-ajax?tid="+tid+"&date="+date;
+}
+
+function addData(tid,date){
+	$.get(getNewURL(tid,date), function(data){
 		// The first element of each 'lightbox-nutrition' <li> is an <a>
 		// with the nutritional data attributes
+		locObj = JSON.parse(data);
+		var loc = getKey(tids,tid);
 		var dishObj;
-		var locObj = $('.lightbox-nutrition :first-child',data).map(function(){
-			dishObj =  getElementData(this);
-			dishObj['data-location'] = loc;
-			return dishObj;
-		}).get();
-		appendData(locObj);
+		var secData;
+		for (meal in locObj){
+			for (section in locObj[meal]){
+				secData = $.map($(locObj[meal][section])
+					.filter(".lightbox-nutrition")
+					.find("a").get(),
+					function(element){
+						dishObj = getImplicitData(element);
+						dishObj["data-meal"] = meal;
+						dishObj["data-section"] = section;
+						dishObj["data-location"] = loc;
+						return dishObj;
+					});
+				appendData(secData);
+			}
+		}
+		$("#food-table").tabulator("setData", tableData);
 	});
 }
 
 function appendData(data){
-	tableData = tableData.concat(data)
-    $("#food-table").tabulator("setData", tableData);
+	tableData = tableData.concat(data);
+}
+
+function resetData(){
+	tableData = [];
+}
+
+function getLocData(tid,date){
+	resetData();
+	addData(tid,date);
+}
+
+function settingsHandler(){
+	var tid = tids[$("#dc-selector").val()];
+	var date = $("#datepicker").val();
+	getLocData(tid,date);
 }
 
 $(document).ready(function(){
@@ -70,14 +103,15 @@ $(document).ready(function(){
 		collapsible:true,
 		active:false
 	});
-	tableData = [];
-	addLocData('Hampshire');
-	//addLocData('Berkshire');
-	//addLocData('Worcester');
-	//addLocData('Franklin');
+	$("#datepicker").datepicker({
+		onSelect:settingsHandler
+	});
+	$("#datepicker").datepicker("setDate", new Date());
+	$("#dc-selector").change(settingsHandler);
+	//getLocData('Hampshire');
 	var unitSorter = function(a,b){
 		return a.baseScalar-b.baseScalar;
-	}
+	};
 	allColumns = [
 		{title:"Dish", 			field:"data-dish-name"},
 		{title:"Serving size", 	field:"data-serving-size", headerSort:false},
@@ -94,7 +128,7 @@ $(document).ready(function(){
 		{title:"Carbohydrates", field:"data-total-carb", align:"left", sorter:unitSorter},
 		{title:"Total fat", 	field:"data-total-fat", align:"left", sorter:unitSorter},
 		{title:"Trans fat", 	field:"data-trans-fat", align:"left", sorter:unitSorter}
-	]
+	];
 	var activeColumns = ["Dish", "Calories", "Serving size", "Meal", "Section"]
 	$("#food-table").tabulator({
 	    //height:205, // set height of table
