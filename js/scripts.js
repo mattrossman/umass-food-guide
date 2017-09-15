@@ -40,8 +40,7 @@ var allColumns = [
 {title:"Trans fat", 	field:"data-trans-fat", 	align:"left", sorter:unitSorter}
 ];
 
-// I don't know what this stands for, but it's used in the online menu
-// as an ID for each dining common
+// `tid` is used on the UMass menu server as an identifier for each dining hall
 var tids = {
 	Worcester:1,
 	Franklin:2,
@@ -162,20 +161,19 @@ function updateColumns(){
 }
 
 $(document).ready(function(){
-	$( "#accordion" ).accordion({
-		animate:200,
-		collapsible:true
-	});
 	$("#datepicker").datepicker();
 
 	// Sets the default date to today
 	$("#datepicker").datepicker("setDate", new Date());
 
+	$("#col-adder-btn").click(function(){
+		addColumn($("#col-adder").val())
+	})
 	tableColumns = [];
 	initColumnAdder();
 
 	$("#food-table").tabulator({
-		responsive: true,
+		fitColumns: false,
 		movableColumns: true,
     });
 
