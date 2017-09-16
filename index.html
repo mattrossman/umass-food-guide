@@ -8,43 +8,77 @@
 	<meta name="description" content="UMenu - advanced search for the UMass Amherst dining halls.">
 	<meta name="author" content="Matt Rossman">
 
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+
 	<link rel="stylesheet" href="css/styles.css">
-
-	<script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
-	<script src="https://code.jquery.com/ui/1.12.0/jquery-ui.min.js"></script>
 	<link rel="stylesheet" href="https://code.jquery.com/ui/1.12.0/themes/smoothness/jquery-ui.css">
-
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabulator/3.2.2/css/tabulator_simple.min.css">
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/tabulator/3.2.2/js/tabulator.min.js"></script>
-
-	<script src='js/quantities.js'></script>
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
   <!--[if lt IE 9]>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.js"></script>
     <![endif]-->
 </head>
 
 <body>
-	<div id="accordion">
-		<h3>Search Settings</h3>
-		<div>
-			<div>
-				<label for="dc-selector">Choose a DC:</label>
-				<select id="dc-selector">
-					<option label=" " selected="selected"></option>
-					<option value="Worcester">Worcester</option>
-					<option value="Franklin">Franklin</option>
-					<option value="Hampshire">Hampshire</option>
-					<option value="Berkshire">Berkshire</option>
-				</select>
-			</div>
-			<div>
-				<label for="datepicker">Date:</label>
-				<input type="text" id="datepicker"></p>
+	<div class="container">
+		<div class="row">
+			<div class="col-lg-4">
+				<h1>UMenu</h1>
+				<small>Advanced search utility for UMass dining halls</small>
 			</div>
 		</div>
-	</div>
+		<div class="panel-group">
+			<div class="panel panel-default">
+				<div class="panel-heading" data-toggle="collapse" href="#collapse1">
+					<h4 class="panel-title">
+						<a data-toggle="collapse" href="#collapse1">Options</a>
+					</h4>
+				</div>
+				<div id="collapse1" class="panel-collapse collapse in">
+					<div class="panel-body">
+						<div class="row row-padded">
+							<div class="col-sm-4">
+								<div class="row"><h3>Data</h3></div>
+								<div class="row">
+									<label for="dc-selector">Choose a DC:</label>
+									<select id="dc-selector">
+										<option label=" " selected="selected"></option>
+										<option>Worcester</option>
+										<option>Franklin</option>
+										<option>Hampshire</option>
+										<option>Berkshire</option>
+									</select>
+								</div>
+								<br>
+								<div class="row">
+									<label for="datepicker">Date:</label>
+									<input type="text" id="datepicker" size=8>
+								</div>
+								<br>
+								<div class="row">
+									<button onclick="submitHandler()">Submit</button>
+								</div>
+							</div>
+							<div class="col-sm-4">
+								<div class="row"><h3>Columns</h3></div>
+								<div class="row" id="col-list">
+								</div>
+								<button onclick="updateColumns()">Update</button>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
 	<div id="food-table"></div>
+	</div> 
+</div>
 
-	<script src="js/scripts.js"></script>
+<script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+<script src="https://code.jquery.com/ui/1.12.0/jquery-ui.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tabulator/3.2.2/js/tabulator.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+<script src='js/quantities.js'></script>
+<script src="js/scripts.js"></script>
 </body>
 </html>
