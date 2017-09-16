@@ -127,26 +127,26 @@ function getLocData(tid,date){
 	addData(tid,date);
 }
 
-function settingsHandler(){
+function submitHandler(){
 	var tid = tids[$("#dc-selector").val()];
 	var date = $("#datepicker").val();
 	getLocData(tid,date);
 }
 
-function removeColumnOption(col){
-	$("#col-adder").find(":contains("+col+")").remove()
+function getCheckedColumns(){
+	return $("#col-list :input:checked").map(function(i,element){
+		return element.value
+	}).get()
 }
 
-function addColumn(col){
-	tableColumns = tableColumns.concat(col);
-	removeColumnOption(col);
-	updateColumns();
+function clickColumnOption(col){
+	$("#col-list label:contains("+col+") :first-child").click();
 }
 
-function initColumnAdder(){
-	var colAdder = $("#col-adder")
+function initColumnOptions(){
+	var colList = $("#col-list");
 	$.map(allColumns,function(col){
-		colAdder.append("<option>"+col.title+"</option>");
+		colList.append('<div class="checkbox"><label><input type="checkbox" class="col-option" value="'+col.title+'">'+col.title+'</label></div>');
 	})
 }
 
@@ -155,7 +155,7 @@ function initColumnAdder(){
 // and sends them to the tabulator element.
 function updateColumns(){
 	$("#food-table").tabulator("setColumns",
-		$.map(tableColumns,function(prop){
+		$.map(getCheckedColumns(),function(prop){
 			return allColumns.find(col => col.title === prop)
 		}));
 }
@@ -169,8 +169,8 @@ $(document).ready(function(){
 	$("#col-adder-btn").click(function(){
 		addColumn($("#col-adder").val())
 	})
-	tableColumns = [];
-	initColumnAdder();
+	initColumnOptions();
+	$(".col-option").change(function(){console.log("changed");})
 
 	$("#food-table").tabulator({
 		fitColumns: false,
@@ -179,5 +179,7 @@ $(document).ready(function(){
 
     // Add a few starter columns to the table
 	var defaultColumns = ["Dish", "Calories", "Serving size", "Meal", "Section"]
-	$.map(defaultColumns,addColumn);
+	//$.map(defaultColumns,addColumn);
+	$.map(defaultColumns,clickColumnOption);
+	updateColumns();
 });
