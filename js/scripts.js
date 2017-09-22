@@ -125,7 +125,7 @@ function buildTable(data){
 	$.map(data, function(item){
 		body.append($("<tr>").append(
 			$.map(colProps, function(prop){
-				return $("<td>").text(item[prop.field]);
+				return $("<td>",{"data-label":prop.title}).text(item[prop.field]);
 			})));
 	});
 }
