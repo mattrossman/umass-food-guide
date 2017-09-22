@@ -1,5 +1,3 @@
-var tableColumns;
-
 var qual_attrs = [
 "data-dish-name",
 "data-serving-size"
@@ -114,6 +112,24 @@ function addData(tid,date){
 	});
 }
 
+function buildTable(data){
+	var cols = getCheckedColumns();
+	var colProps = getColumnProps(cols);
+	var head = $("#food-table-head");
+	var body = $("#food-table-body");
+	head.empty();
+	body.empty();
+	$.map(cols, function(col){
+		head.append($("<th>").text(col))
+	});
+	$.map(data, function(item){
+		body.append($("<tr>").append(
+			$.map(colProps, function(prop){
+				return $("<td>").text(item[prop.field]);
+			})));
+	});
+}
+
 function appendData(data){
 	tableData = tableData.concat(data);
 }
@@ -135,8 +151,14 @@ function submitHandler(){
 
 function getCheckedColumns(){
 	return $("#col-list :input:checked").map(function(i,element){
-		return element.value
+		return element.value;
 	}).get()
+}
+
+function getColumnProps(cols){
+	return $.map(cols,function(prop){
+		return allColumns.find(col => col.title === prop)
+	});
 }
 
 function clickColumnOption(col){
@@ -147,17 +169,14 @@ function initColumnOptions(){
 	var colList = $("#col-list");
 	$.map(allColumns,function(col){
 		colList.append('<div class="checkbox"><label><input type="checkbox" class="col-option" value="'+col.title+'">'+col.title+'</label></div>');
-	})
+	});
 }
 
-// Pulls the appropriate column objects from the master list
-// according to the titles currently specified in `tableColumns`
+// Pulls the checked column objects from the master list
 // and sends them to the tabulator element.
 function updateColumns(){
 	$("#food-table").tabulator("setColumns",
-		$.map(getCheckedColumns(),function(prop){
-			return allColumns.find(col => col.title === prop)
-		}));
+		getColumnProps(getCheckedColumns()));
 }
 
 $(document).ready(function(){
@@ -170,7 +189,6 @@ $(document).ready(function(){
 		addColumn($("#col-adder").val())
 	})
 	initColumnOptions();
-	$(".col-option").change(function(){console.log("changed");})
 
 	$("#food-table").tabulator({
 		fitColumns: false,
@@ -179,7 +197,6 @@ $(document).ready(function(){
 
     // Add a few starter columns to the table
 	var defaultColumns = ["Dish", "Calories", "Serving size", "Meal", "Section"]
-	//$.map(defaultColumns,addColumn);
 	$.map(defaultColumns,clickColumnOption);
 	updateColumns();
 });
