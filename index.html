@@ -37,7 +37,7 @@
 				<div id="collapse1" class="panel-collapse collapse in">
 					<div class="panel-body">
 						<div class="row row-padded">
-							<div class="col-sm-4">
+							<div class="col-sm-3">
 								<div class="row"><h3>Data</h3></div>
 								<div class="row">
 									<label for="dc-selector">Choose a DC:</label>
@@ -59,11 +59,30 @@
 									<button onclick="submitHandler()">Submit</button>
 								</div>
 							</div>
-							<div class="col-sm-4">
+							<div class="col-sm-3">
 								<div class="row"><h3>Columns</h3></div>
 								<div class="row" id="col-list">
 								</div>
 								<button onclick="updateTable()">Update</button>
+							</div>
+							<div class="col-sm-3">
+								<div class="row"><h3>Sorting</h3></div>
+								<div class="row">
+									<select id="sort-selector">
+										<option label=" " selected="selected"></option>
+									</select>
+									<div id="sort-direction">
+										<div class="radio">
+											<label><input type="radio" name="optradio" value=true>Ascending</label>
+										</div>
+										<div class="radio">
+											<label><input type="radio" name="optradio" value=false>Descending</label>
+										</div>
+									</div>
+								</div>
+							</div>
+							<div class="col-sm-3">
+								<div class="row"><h3>Filters</h3></div>
 							</div>
 						</div>
 					</div>

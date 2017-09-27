@@ -138,6 +138,9 @@ function buildTable(data){
 }
 
 function updateTable(){
+	if ($("#sort-selector").val()!=""){
+		sortData($("#sort-selector").val(),$("#sort-direction :radio:checked").val()=="true");
+	}
 	buildTable(tableData);
 }
 
@@ -213,6 +216,17 @@ class Filter {
 	}
 }
 
+function colClickedHandler(e) {
+	var col = $(this).val();
+	var sortSelector = $("#sort-selector");
+	if ($(this).is(":checked")){
+		sortSelector.append($("<option>").append(col));
+	}
+	else {
+		sortSelector.children(":contains('"+col+"')").remove();
+	}
+}
+
 function sortData(col,ascending=true){
 	var prop = allColumns.findObj("title",col)
 	var field = prop.field;
@@ -222,7 +236,7 @@ function sortData(col,ascending=true){
 		if (quant_attrs.includes(field))
 			compared = aVal.compareTo(bVal);
 		else
-			compared = aVal > bVal;
+			compared = aVal.localeCompare(bVal);
 		return (ascending ? 1 : -1)*compared;
 	});
 }
@@ -234,6 +248,7 @@ $(document).ready(function(){
 	$("#datepicker").datepicker("setDate", new Date());
 
 	initColumnOptions();
+	$("#col-list :input").click(colClickedHandler);
 
     // Add a few starter columns to the table
 	var defaultColumns = ["Dish", "Calories", "Serving size", "Meal", "Section"]
