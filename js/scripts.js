@@ -1,5 +1,3 @@
-var tableColumns;
-
 var qual_attrs = [
 "data-dish-name",
 "data-serving-size"
@@ -19,7 +17,7 @@ var quant_attrs = [
 ]
 
 var unitSorter = function(a,b){
-	return a.baseScalar-b.baseScalar;
+	return a.compareTo(b);
 };
 
 var allColumns = [
@@ -48,9 +46,8 @@ var tids = {
 	Berkshire:4
 }
 
-
 // Gets a parameter from the URL query
-// ex: www.mysite.com/?param1=val1&param2=val2
+// ex: www.mysite.com/?param1=val1&param2=bVal
 // getParameterByName("param1") ==> "val1"
 function getParameterByName(name, url) {
 	if (!url) url = window.location.href;
@@ -60,6 +57,14 @@ function getParameterByName(name, url) {
 	if (!results) return null;
 	if (!results[2]) return '';
 	return decodeURIComponent(results[2].replace(/\+/g, " "));
+}
+
+Array.prototype.findObj = function(prop, val) {
+    for (var i = 0; i < this.length; i++) {
+        if (this[i][prop] === val)
+            return this[i]; // Return as soon as the object is found
+    }
+    return null; // The object was not found
 }
 
 // Find the first key for a certain value in an object
@@ -110,8 +115,33 @@ function addData(tid,date){
 				appendData(secData);
 			}
 		}
-		$("#food-table").tabulator("setData", tableData);
+		updateTable();
 	});
+}
+
+function buildTable(data){
+	var cols = getCheckedColumns();
+	var colProps = getColumnProps(cols);
+	var head = $("#food-table-head");
+	var body = $("#food-table-body");
+	head.empty();
+	body.empty();
+	$.map(cols, function(col){
+		head.append($("<th>").text(col))
+	});
+	$.map(data, function(item){
+		body.append($("<tr>").append(
+			$.map(colProps, function(prop){
+				return $("<td>",{"data-label":prop.title}).text(item[prop.field]);
+			})));
+	});
+}
+
+function updateTable(){
+	if ($("#sort-selector").val()!=""){
+		sortData($("#sort-selector").val(),$("#sort-direction :radio:checked").val()=="true");
+	}
+	buildTable(tableData);
 }
 
 function appendData(data){
@@ -135,8 +165,14 @@ function submitHandler(){
 
 function getCheckedColumns(){
 	return $("#col-list :input:checked").map(function(i,element){
-		return element.value
+		return element.value;
 	}).get()
+}
+
+function getColumnProps(cols){
+	return $.map(cols,function(prop){
+		return allColumns.find(col => col.title === prop)
+	});
 }
 
 function clickColumnOption(col){
@@ -147,39 +183,76 @@ function initColumnOptions(){
 	var colList = $("#col-list");
 	$.map(allColumns,function(col){
 		colList.append('<div class="checkbox"><label><input type="checkbox" class="col-option" value="'+col.title+'">'+col.title+'</label></div>');
-	})
+	});
 }
 
-// Pulls the appropriate column objects from the master list
-// according to the titles currently specified in `tableColumns`
-// and sends them to the tabulator element.
-function updateColumns(){
-	$("#food-table").tabulator("setColumns",
-		$.map(getCheckedColumns(),function(prop){
-			return allColumns.find(col => col.title === prop)
-		}));
+class Filter {
+	constructor(col, rel, fVal, inverse=false){
+		this.field = allColumns.findObj("title",col).field;
+		this.isQty = quant_attrs.includes(this.field)
+		this.fVal = fVal;
+		this.rel = rel;
+		this.inverse = inverse;
+	}
+
+	static apply(self,item){
+		var pass;
+		var val = item[self.field];
+		switch(self.rel){
+			case "=":
+				pass = self.isQty ? val.eq(self.fVal) : val==self.fVal;
+				break;
+			case ">":
+				pass = self.isQty ? val.gt(self.fVal) : val >self.fVal;
+				break;
+			case "<":
+				pass = self.isQty ? val.lt(self.fVal) : val <self.fVal;
+				break;
+			case "in":
+				pass = (self.isQty ? val.toString() : val).includes(self.fVal);
+				break;
+		}
+		return self.inverse ? !pass : pass;
+	}
+}
+
+function colClickedHandler(e) {
+	var col = $(this).val();
+	var sortSelector = $("#sort-selector");
+	if ($(this).is(":checked")){
+		sortSelector.append($("<option>").append(col));
+	}
+	else {
+		sortSelector.children(":contains('"+col+"')").remove();
+	}
+}
+
+function sortData(col,ascending=true){
+	var prop = allColumns.findObj("title",col)
+	var field = prop.field;
+	tableData.sort(function(a,b){
+		var aVal = a[field], bVal = b[field];
+		var compared;
+		if (quant_attrs.includes(field))
+			compared = aVal.compareTo(bVal);
+		else
+			compared = aVal.localeCompare(bVal);
+		return (ascending ? 1 : -1)*compared;
+	});
 }
 
 $(document).ready(function(){
+	resetData();
 	$("#datepicker").datepicker();
-
 	// Sets the default date to today
 	$("#datepicker").datepicker("setDate", new Date());
 
-	$("#col-adder-btn").click(function(){
-		addColumn($("#col-adder").val())
-	})
 	initColumnOptions();
-	$(".col-option").change(function(){console.log("changed");})
-
-	$("#food-table").tabulator({
-		fitColumns: false,
-		movableColumns: true,
-    });
+	$("#col-list :input").click(colClickedHandler);
 
     // Add a few starter columns to the table
 	var defaultColumns = ["Dish", "Calories", "Serving size", "Meal", "Section"]
-	//$.map(defaultColumns,addColumn);
 	$.map(defaultColumns,clickColumnOption);
-	updateColumns();
+
+	updateTable();
 });

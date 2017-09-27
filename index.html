@@ -11,8 +11,8 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 
 	<link rel="stylesheet" href="css/styles.css">
+	<link rel="stylesheet" href="css/responsive_tables.css">
 	<link rel="stylesheet" href="https://code.jquery.com/ui/1.12.0/themes/smoothness/jquery-ui.css">
-	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabulator/3.2.2/css/tabulator_simple.min.css">
 	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
   <!--[if lt IE 9]>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.js"></script>
@@ -37,7 +37,7 @@
 				<div id="collapse1" class="panel-collapse collapse in">
 					<div class="panel-body">
 						<div class="row row-padded">
-							<div class="col-sm-4">
+							<div class="col-sm-3">
 								<div class="row"><h3>Data</h3></div>
 								<div class="row">
 									<label for="dc-selector">Choose a DC:</label>
@@ -59,24 +59,45 @@
 									<button onclick="submitHandler()">Submit</button>
 								</div>
 							</div>
-							<div class="col-sm-4">
+							<div class="col-sm-3">
 								<div class="row"><h3>Columns</h3></div>
 								<div class="row" id="col-list">
 								</div>
-								<button onclick="updateColumns()">Update</button>
+								<button onclick="updateTable()">Update</button>
+							</div>
+							<div class="col-sm-3">
+								<div class="row"><h3>Sorting</h3></div>
+								<div class="row">
+									<select id="sort-selector">
+										<option label=" " selected="selected"></option>
+									</select>
+									<div id="sort-direction">
+										<div class="radio">
+											<label><input type="radio" name="optradio" value=true>Ascending</label>
+										</div>
+										<div class="radio">
+											<label><input type="radio" name="optradio" value=false>Descending</label>
+										</div>
+									</div>
+								</div>
+							</div>
+							<div class="col-sm-3">
+								<div class="row"><h3>Filters</h3></div>
 							</div>
 						</div>
 					</div>
 				</div>
 			</div>
 		</div>
-	<div id="food-table"></div>
+		<table id="new-food-table" class="table-hover">
+			<thead id="food-table-head">
+			<tbody id="food-table-body">
+		</table>
 	</div> 
 </div>
 
 <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
 <script src="https://code.jquery.com/ui/1.12.0/jquery-ui.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/tabulator/3.2.2/js/tabulator.min.js"></script>
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
 <script src='js/quantities.js'></script>
 <script src="js/scripts.js"></script>
