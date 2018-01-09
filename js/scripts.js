@@ -1,6 +1,33 @@
 //$(document).ready(function(){
 
-let tableData;
+/*
+Glossary and conventions
+
+Prop:
+property of a food item. Can be qualitative or quantitative. Has
+a human readable title along with a field name corresponding to the
+HTML attribute which stores that property.
+
+Dish:
+Object containing all of the properties of a given food labeled by field.
+
+Date:
+String in MM/DD/YYYY format
+
+tid:
+An identifying number for each dining hall.
+I didn't come up with the name, 'tid' is used in the data the UMass
+Dining server returns
+
+Request:
+Object containing a date and tid
+
+Columns are addressed by title and abbreviated 'cols'
+
+*/
+
+
+const menu = [];
 
 const defaultColumns = ["Dish", "Calories", "Serving size", "Meal", "Section"]
 
@@ -30,6 +57,61 @@ const tids = {
 	Berkshire:4
 }
 
+init();
+
+function Request (tid, date) {
+	this.tid = tid;
+	this.date = date;
+}
+
+// Dynamically form the AJAX URL for each request rather than storing redundant segments
+Object.defineProperty(Request.prototype, "url", {
+	get: function() { return `http://umassdining.com/foodpro-menu-ajax?
+		tid=${this.tid}&date=${this.date}` }
+});
+
+// Container is the array that will hold the dishes
+// Callback will be run after all dishes have been saved
+Request.prototype.send = function(container, callback) {
+	$.get(this.url,
+		function (data) {
+			const menuObj = JSON.parse(data);
+			for (meal in menuObj){
+				for (section in menuObj[meal]){
+					const anchors = $(menuObj[meal][section])
+						.filter(".lightbox-nutrition")
+						.find("a").get();
+					for (el of anchors) {
+						container.push(getDishObj(el, meal, section));
+					};
+				};
+			};
+			callback();
+		});
+
+	function getImplicitData(element) {
+		const payload = {}
+		// Save the qualitative properties as regular strings
+		for (const prop of propList) {
+			const fieldStr = $(element).attr(prop.field);
+			// Playing with a fancy inline switch here
+			payload[prop.field] = {
+				"qual" : () => fieldStr,		// qualitative (just a string)
+				"quant": () => Qty(fieldStr)	// quantitative (Quantities.js object)
+			}[prop.type]();
+		}
+		return payload;
+	};
+
+	function getDishObj(element, meal, sec) {
+		const dishObj = getImplicitData(element);
+		dishObj["data-meal"] = meal;
+		dishObj["data-section"] = sec;
+		dishObj["data-location"] = getKey(tids, this.tid);
+		return dishObj;
+	};
+};
+
 // Gets a parameter from the URL query
 // ex: www.mysite.com/?param1=val1&param2=bVal
 // getParameterByName("param1") ==> "val1"
@@ -46,69 +128,6 @@ function getParameterByName(name, url) {
 function getKey(obj, value) {
 	return Object.keys(obj).find(key => obj[key] === value);
 };
-
-// Get the implicit nutritional data from a given <a> element.
-// These data values are initially stored as element properties.
-function getImplicitData(element) {
-	const payload = {}
-	// Save the qualitative properties as regular strings
-	for (const prop of propList) {
-		const field = prop.field;
-		// Playing with a fancy inline switch here
-		payload[field] = {
-			"qual" : () => $(element).attr(field),		// qualitative (just a string)
-			"quant": () => Qty($(element).attr(field))	// quantitative (Quantities.js object)
-		}[prop.type]();
-	}
-	return payload;
-}
-
-// Builds the AJAX request URL for the UMass menu server
-function getURL(tid, date) {
-	return `http://umassdining.com/foodpro-menu-ajax?tid=${tid}&date=${date}`;
-}
-
-function getDishObj(element, meal, sec, tid) {
-	const dishObj = getImplicitData(element);
-	dishObj["data-meal"] = meal;
-	dishObj["data-section"] = section;
-	dishObj["data-location"] = getKey(tids, tid);
-	return dishObj;
-};
-
-function addData(data, tid, date) {
-	const locObj = JSON.parse(data);
-	for (meal in locObj){
-		for (section in locObj[meal]){
-			const anchors = $(locObj[meal][section])
-				.filter(".lightbox-nutrition")
-				.find("a").get();
-			const secDishes = $.map(anchors,
-				el => getDishObj(el, meal, section, tid));
-			appendData(secDishes);
-		}
-	}
-	updateTable();
-}
-
-function requestData(tid, date) {
-	$.get(getURL(tid, date), function(data){
-		// The first element of each 'lightbox-nutrition' <li> is an <a>
-		// with the nutritional data attributes
-		const locObj = JSON.parse(data);
-		for (meal in locObj){
-			for (section in locObj[meal]){
-				const anchors = $(locObj[meal][section])
-					.filter(".lightbox-nutrition")
-					.find("a").get();
-				const secDishes = $.map(anchors,
-					el => getDishObj(el, meal, section, tid));
-				appendData(secDishes);
-			}
-		}
-		updateTable();
-	});
-}
 
 function buildTable(data) {
 	const cols = getCheckedColumns();
@@ -132,31 +151,11 @@ function updateTable() {
 	if ($("#sort-selector").val()!=""){
 		sortData($("#sort-selector").val(),$("#sort-direction :radio:checked").val()=="true");
 	}
-	buildTable(tableData);
-}
-
-function appendData(data) {
-	tableData = tableData.concat(data);
+	buildTable(menu);
 }
 
 function resetData() {
-	tableData = [];
-}
-
-function requestLocData(tid, date) {
-	resetData();
-	$.get(getURL(tid, date), data => addData(data, tid, date));
-}
-
-function getLocData(tid, date) {
-	resetData();
-	requestData(tid,date);
-}
-
-function submitHandler() {
-	const tid = tids[$("#dc-selector").val()];
-	const date = $("#datepicker").val();
-	requestLocData(tid, date);
+	menu.length = 0;
 }
 
 function getCheckedColumns() {
@@ -175,9 +174,17 @@ function clickColumnOption(col) {
 
 function initColumnOptions() {
 	const colList = $("#col-list");
-	$.map(propList,function(prop){
-		colList.append('<div class="checkbox"><label><input type="checkbox" class="col-option" value="'+prop.title+'">'+prop.title+'</label></div>');
-	});
+	for (prop of propList) {
+		colList.append($("<div>", {class:"checkbox"})
+			.append($("<label>")
+				.append($("<input>",
+				{
+					type:"checkbox",
+					class:"col-option",
+					value:prop.title
+				}))
+				.append(prop.title)));
+	};
 }
 
 class Filter {
@@ -211,21 +218,10 @@ class Filter {
 	}
 }
 
-function colClickedHandler(e) {
-	const col = $(this).val();
-	const sortSelector = $("#sort-selector");
-	if ($(this).is(":checked")){
-		sortSelector.append($("<option>").append(col));
-	}
-	else {
-		sortSelector.children(":contains('"+col+"')").remove();
-	}
-}
-
 function sortData(col, ascending=true) {
 	const prop = getProp(col);
 	const field = prop.field;
-	tableData.sort(function(a,b){
+	menu.sort(function(a,b){
 		const aVal = a[field], bVal = b[field];
 		let compared;
 		if (prop.type==="quant")
@@ -236,17 +232,38 @@ function sortData(col, ascending=true) {
 	});
 }
 
-resetData();
-$("#datepicker").datepicker();
-// Sets the default date to today
-$("#datepicker").datepicker("setDate", new Date("12/20/2017"));
+function registerHandlers() {
+	$("#col-list :input").click(colClickedHandler);
+	$("#submit-button").click(submitHandler);
+	$("#update-button").click(updateTable);
 
-initColumnOptions();
-$("#col-list :input").click(colClickedHandler);
-$("#submit-button").click(submitHandler);
-$("#update-button").click(updateTable);
+	function submitHandler() {
+		const tid = tids[$("#dc-selector").val()];
+		const date = $("#datepicker").val();
+		new Request(tid, date).send(menu, updateTable);
+	};
 
-$.map(defaultColumns, clickColumnOption);
-updateTable();
+	function colClickedHandler(e) {
+		const col = $(this).val();
+		const sortSelector = $("#sort-selector");
+		if ($(this).is(":checked")){
+			sortSelector.append($("<option>").append(col));
+		}
+		else {
+			sortSelector.children(":contains('"+col+"')").remove();
+		}
+	};
+}
+
+function init() {
+	$("#datepicker").datepicker();
+	// Sets the default date to today
+	$("#datepicker").datepicker("setDate", new Date("12/20/2017"));
+
+	initColumnOptions();
+	registerHandlers();
+	defaultColumns.map(clickColumnOption);
+	updateTable();
+}
 
 //});
