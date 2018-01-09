@@ -1,45 +1,29 @@
-var qual_attrs = [
-"data-dish-name",
-"data-serving-size"
-]
+//$(document).ready(function(){
 
-var quant_attrs = [
-"data-calories",
-"data-cholesterol",
-"data-dietary-fiber",
-"data-protein",
-"data-sat-fat",
-"data-sodium",
-"data-sugars",
-"data-total-carb",
-"data-total-fat",
-"data-trans-fat"
-]
+let tableData;
 
-var unitSorter = function(a,b){
-	return a.compareTo(b);
-};
+const defaultColumns = ["Dish", "Calories", "Serving size", "Meal", "Section"]
 
-var allColumns = [
-{title:"Dish", 			field:"data-dish-name"},
-{title:"Serving size", 	field:"data-serving-size",	headerSort:false},
-{title:"Location", 		field:"data-location"},
-{title:"Meal", 			field:"data-meal"},
-{title:"Section",		field:"data-section"},
-{title:"Calories", 		field:"data-calories", 		align:"left"},
-{title:"Cholesterol", 	field:"data-cholesterol",	align:"left", sorter:unitSorter},
-{title:"Dietary fiber", field:"data-dietary-fiber", align:"left", sorter:unitSorter},
-{title:"Protein", 		field:"data-protein", 		align:"left", sorter:unitSorter},
-{title:"Saturated fat", field:"data-sat-fat", 		align:"left", sorter:unitSorter},
-{title:"Sodium", 		field:"data-sodium", 		align:"left", sorter:unitSorter},
-{title:"Sugar", 		field:"data-sugars", 		align:"left", sorter:unitSorter},
-{title:"Carbohydrates", field:"data-total-carb", 	align:"left", sorter:unitSorter},
-{title:"Total fat", 	field:"data-total-fat", 	align:"left", sorter:unitSorter},
-{title:"Trans fat", 	field:"data-trans-fat", 	align:"left", sorter:unitSorter}
+const propList = [
+{title:"Dish", 			field:"data-dish-name",		type:"qual"},
+{title:"Serving size", 	field:"data-serving-size",	type:"qual"},
+{title:"Location", 		field:"data-location",		type:"qual"},
+{title:"Meal", 			field:"data-meal",			type:"qual"},
+{title:"Section",		field:"data-section",		type:"qual"},
+{title:"Calories", 		field:"data-calories",		type:"quant"},
+{title:"Cholesterol", 	field:"data-cholesterol",	type:"quant"},
+{title:"Dietary fiber", field:"data-dietary-fiber",	type:"quant"},
+{title:"Protein", 		field:"data-protein",		type:"quant"},
+{title:"Saturated fat", field:"data-sat-fat",		type:"quant"},
+{title:"Sodium", 		field:"data-sodium",		type:"quant"},
+{title:"Sugar", 		field:"data-sugars",		type:"quant"},
+{title:"Carbohydrates", field:"data-total-carb",	type:"quant"},
+{title:"Total fat", 	field:"data-total-fat",		type:"quant"},
+{title:"Trans fat", 	field:"data-trans-fat",		type:"quant"}
 ];
 
 // `tid` is used on the UMass menu server as an identifier for each dining hall
-var tids = {
+const tids = {
 	Worcester:1,
 	Franklin:2,
 	Hampshire:3,
@@ -52,78 +36,85 @@ var tids = {
 function getParameterByName(name, url) {
 	if (!url) url = window.location.href;
 	name = name.replace(/[\[\]]/g, "\\$&");
-	var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
+	const regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
 	results = regex.exec(url);
 	if (!results) return null;
 	if (!results[2]) return '';
 	return decodeURIComponent(results[2].replace(/\+/g, " "));
 }
 
-Array.prototype.findObj = function(prop, val) {
-    for (var i = 0; i < this.length; i++) {
-        if (this[i][prop] === val)
-            return this[i]; // Return as soon as the object is found
-    }
-    return null; // The object was not found
-}
-
-// Find the first key for a certain value in an object
-function getKey(obj,value) {
+function getKey(obj, value) {
 	return Object.keys(obj).find(key => obj[key] === value);
 };
 
 // Get the implicit nutritional data from a given <a> element.
 // These data values are initially stored as element properties.
-function getImplicitData(element){
-	var payload = {}
+function getImplicitData(element) {
+	const payload = {}
 	// Save the qualitative properties as regular strings
-	$.map(qual_attrs, function(attr){
-		payload[attr] = $(element).attr(attr);
-	});
-	// Parse the quantitative properties as quantities.js objects
-	$.map(quant_attrs, function(attr){
-		payload[attr] = Qty($(element).attr(attr));
-	});
+	for (const prop of propList) {
+		const field = prop.field;
+		// Playing with a fancy inline switch here
+		payload[field] = {
+			"qual" : () => $(element).attr(field),		// qualitative (just a string)
+			"quant": () => Qty($(element).attr(field))	// quantitative (Quantities.js object)
+		}[prop.type]();
+	}
 	return payload;
 }
 
 // Builds the AJAX request URL for the UMass menu server
-function getURL(tid, date){
-	return "http://umassdining.com/foodpro-menu-ajax?tid="+tid+"&date="+date;
+function getURL(tid, date) {
+	return `http://umassdining.com/foodpro-menu-ajax?tid=${tid}&date=${date}`;
 }
 
-function addData(tid,date){
-	$.get(getURL(tid,date), function(data){
+function getDishObj(element, meal, sec, tid) {
+	const dishObj = getImplicitData(element);
+	dishObj["data-meal"] = meal;
+	dishObj["data-section"] = section;
+	dishObj["data-location"] = getKey(tids, tid);
+	return dishObj;
+};
+
+function addData(data, tid, date) {
+	const locObj = JSON.parse(data);
+	for (meal in locObj){
+		for (section in locObj[meal]){
+			const anchors = $(locObj[meal][section])
+				.filter(".lightbox-nutrition")
+				.find("a").get();
+			const secDishes = $.map(anchors,
+				el => getDishObj(el, meal, section, tid));
+			appendData(secDishes);
+		}
+	}
+	updateTable();
+}
+
+function requestData(tid, date) {
+	$.get(getURL(tid, date), function(data){
 		// The first element of each 'lightbox-nutrition' <li> is an <a>
 		// with the nutritional data attributes
-		locObj = JSON.parse(data);
-		var loc = getKey(tids,tid);
-		var dishObj;
-		var secData;
+		const locObj = JSON.parse(data);
 		for (meal in locObj){
 			for (section in locObj[meal]){
-				secData = $.map($(locObj[meal][section])
+				const anchors = $(locObj[meal][section])
 					.filter(".lightbox-nutrition")
-					.find("a").get(),
-					function(element){
-						dishObj = getImplicitData(element);
-						dishObj["data-meal"] = meal;
-						dishObj["data-section"] = section;
-						dishObj["data-location"] = loc;
-						return dishObj;
-					});
-				appendData(secData);
+					.find("a").get();
+				const secDishes = $.map(anchors,
+					el => getDishObj(el, meal, section, tid));
+				appendData(secDishes);
 			}
 		}
 		updateTable();
 	});
 }
 
-function buildTable(data){
-	var cols = getCheckedColumns();
-	var colProps = getColumnProps(cols);
-	var head = $("#food-table-head");
-	var body = $("#food-table-body");
+function buildTable(data) {
+	const cols = getCheckedColumns();
+	const colProps = $.map(cols, getProp);
+	const head = $("#food-table-head");
+	const body = $("#food-table-body");
 	head.empty();
 	body.empty();
 	$.map(cols, function(col){
@@ -137,76 +128,80 @@ function buildTable(data){
 	});
 }
 
-function updateTable(){
+function updateTable() {
 	if ($("#sort-selector").val()!=""){
 		sortData($("#sort-selector").val(),$("#sort-direction :radio:checked").val()=="true");
 	}
 	buildTable(tableData);
 }
 
-function appendData(data){
+function appendData(data) {
 	tableData = tableData.concat(data);
 }
 
-function resetData(){
+function resetData() {
 	tableData = [];
 }
 
-function getLocData(tid,date){
+function requestLocData(tid, date) {
 	resetData();
-	addData(tid,date);
+	$.get(getURL(tid, date), data => addData(data, tid, date));
 }
 
-function submitHandler(){
-	var tid = tids[$("#dc-selector").val()];
-	var date = $("#datepicker").val();
-	getLocData(tid,date);
+function getLocData(tid, date) {
+	resetData();
+	requestData(tid,date);
 }
 
-function getCheckedColumns(){
-	return $("#col-list :input:checked").map(function(i,element){
+function submitHandler() {
+	const tid = tids[$("#dc-selector").val()];
+	const date = $("#datepicker").val();
+	requestLocData(tid, date);
+}
+
+function getCheckedColumns() {
+	return $("#col-list :input:checked").map(function(i, element){
 		return element.value;
 	}).get()
 }
 
-function getColumnProps(cols){
-	return $.map(cols,function(prop){
-		return allColumns.find(col => col.title === prop)
-	});
+function getProp(name) {
+    return propList.find(prop => prop.title === name);
 }
 
-function clickColumnOption(col){
+function clickColumnOption(col) {
 	$("#col-list label:contains("+col+") :first-child").click();
 }
 
-function initColumnOptions(){
-	var colList = $("#col-list");
-	$.map(allColumns,function(col){
-		colList.append('<div class="checkbox"><label><input type="checkbox" class="col-option" value="'+col.title+'">'+col.title+'</label></div>');
+function initColumnOptions() {
+	const colList = $("#col-list");
+	$.map(propList,function(prop){
+		colList.append('<div class="checkbox"><label><input type="checkbox" class="col-option" value="'+prop.title+'">'+prop.title+'</label></div>');
 	});
 }
 
 class Filter {
-	constructor(col, rel, fVal, inverse=false){
-		this.field = allColumns.findObj("title",col).field;
-		this.isQty = quant_attrs.includes(this.field)
+	constructor(col, rel, fVal, inverse=false) {
+		const prop = getProp(col)
+		this.field = prop.field;
+		this.isQty = prop.type==="quant";
 		this.fVal = fVal;
 		this.rel = rel;
 		this.inverse = inverse;
 	}
 
-	static apply(self,item){
-		var pass;
-		var val = item[self.field];
+	static apply(self, item) {
+		let pass;
+		const val = item[self.field];
 		switch(self.rel){
 			case "=":
-				pass = self.isQty ? val.eq(self.fVal) : val==self.fVal;
+				pass = self.isQty ? val.eq(self.fVal) : val===self.fVal;
 				break;
 			case ">":
-				pass = self.isQty ? val.gt(self.fVal) : val >self.fVal;
+				pass = self.isQty ? val.gt(self.fVal) : val > self.fVal;
 				break;
 			case "<":
-				pass = self.isQty ? val.lt(self.fVal) : val <self.fVal;
+				pass = self.isQty ? val.lt(self.fVal) : val < self.fVal;
 				break;
 			case "in":
 				pass = (self.isQty ? val.toString() : val).includes(self.fVal);
@@ -217,8 +212,8 @@ class Filter {
 }
 
 function colClickedHandler(e) {
-	var col = $(this).val();
-	var sortSelector = $("#sort-selector");
+	const col = $(this).val();
+	const sortSelector = $("#sort-selector");
 	if ($(this).is(":checked")){
 		sortSelector.append($("<option>").append(col));
 	}
@@ -227,13 +222,13 @@ function colClickedHandler(e) {
 	}
 }
 
-function sortData(col,ascending=true){
-	var prop = allColumns.findObj("title",col)
-	var field = prop.field;
+function sortData(col, ascending=true) {
+	const prop = getProp(col);
+	const field = prop.field;
 	tableData.sort(function(a,b){
-		var aVal = a[field], bVal = b[field];
-		var compared;
-		if (quant_attrs.includes(field))
+		const aVal = a[field], bVal = b[field];
+		let compared;
+		if (prop.type==="quant")
 			compared = aVal.compareTo(bVal);
 		else
 			compared = aVal.localeCompare(bVal);
@@ -241,18 +236,17 @@ function sortData(col,ascending=true){
 	});
 }
 
-$(document).ready(function(){
-	resetData();
-	$("#datepicker").datepicker();
-	// Sets the default date to today
-	$("#datepicker").datepicker("setDate", new Date());
+resetData();
+$("#datepicker").datepicker();
+// Sets the default date to today
+$("#datepicker").datepicker("setDate", new Date("12/20/2017"));
 
-	initColumnOptions();
-	$("#col-list :input").click(colClickedHandler);
+initColumnOptions();
+$("#col-list :input").click(colClickedHandler);
+$("#submit-button").click(submitHandler);
+$("#update-button").click(updateTable);
 
-    // Add a few starter columns to the table
-	var defaultColumns = ["Dish", "Calories", "Serving size", "Meal", "Section"]
-	$.map(defaultColumns,clickColumnOption);
+$.map(defaultColumns, clickColumnOption);
+updateTable();
 
-	updateTable();
-});
+//});
