@@ -187,34 +187,30 @@ function initColumnOptions() {
 	};
 }
 
-class Filter {
-	constructor(col, rel, fVal, inverse=false) {
-		const prop = getProp(col)
-		this.field = prop.field;
-		this.isQty = prop.type==="quant";
-		this.fVal = fVal;
-		this.rel = rel;
-		this.inverse = inverse;
+function MenuFilter(col, rel, fVal, inverse=false) {
+	/*
+	col  : the column to operate on
+	rel  : the relationship to check for
+	fVal : the filter value to compare from
+	inverse : whether to invert the filter
+	*/
+	const prop = getProp(col);
+	const isQty = prop.type==="quant";
+	isQty ? fVal = new Qty(fVal) : "";
+	
+	function allow(dish) {
+		const dVal = dish[prop.field];
+		const pass = {
+			"="  : () => isQty ? dVal.eq(fVal) : dVal===fVal,
+			">"  : () => isQty ? dVal.gt(fVal) : dVal > fVal,
+			"<"  : () => isQty ? dVal.lt(fVal) : dVal < fVal,
+			"in" : () => (dVal.toString()).includes(fVal)
+		}[rel]();
+		return inverse ? !pass : pass;
 	}
 
-	static apply(self, item) {
-		let pass;
-		const val = item[self.field];
-		switch(self.rel){
-			case "=":
-				pass = self.isQty ? val.eq(self.fVal) : val===self.fVal;
-				break;
-			case ">":
-				pass = self.isQty ? val.gt(self.fVal) : val > self.fVal;
-				break;
-			case "<":
-				pass = self.isQty ? val.lt(self.fVal) : val < self.fVal;
-				break;
-			case "in":
-				pass = (self.isQty ? val.toString() : val).includes(self.fVal);
-				break;
-		}
-		return self.inverse ? !pass : pass;
+	this.apply = function(container) {
+		return container.filter(allow);
 	}
 }
 
