@@ -28,6 +28,9 @@ Columns are addressed by title and abbreviated 'cols'
 
 
 const menu = [];
+const filters = {};
+let needRefresh = true;
+let needSort = false;
 
 const defaultColumns = ["Dish", "Calories", "Serving size", "Meal", "Section"]
 
@@ -125,6 +128,13 @@ function getParameterByName(name, url) {
 	return decodeURIComponent(results[2].replace(/\+/g, " "));
 }
 
+String.prototype.hashCode = function() {
+  for(var ret = 0, i = 0, len = this.length; i < len; i++) {
+    ret = (31 * ret + this.charCodeAt(i)) << 0;
+  }
+  return ret.toString();
+};
+
 function getKey(obj, value) {
 	return Object.keys(obj).find(key => obj[key] === value);
 };
@@ -147,13 +157,6 @@ function buildTable(data) {
 	});
 }
 
-function updateTable() {
-	if ($("#sort-selector").val()!=""){
-		sortData($("#sort-selector").val(),$("#sort-direction :radio:checked").val()=="true");
-	}
-	buildTable(menu);
-}
-
 function resetData() {
 	menu.length = 0;
 }
@@ -174,6 +177,7 @@ function clickColumnOption(col) {
 
 function initColumnOptions() {
 	const colList = $("#col-list");
+	const colSelect = $("#filter-col-selector");
 	for (prop of propList) {
 		colList.append($("<div>", {class:"checkbox"})
 			.append($("<label>")
@@ -184,7 +188,21 @@ function initColumnOptions() {
 					value:prop.title
 				}))
 				.append(prop.title)));
+		colSelect.append($("<option>").append(prop.title));
 	};
+}
+
+function addFilter(filter) {
+	const list = $("#filter-list");
+	const hash = filter.toString().hashCode()
+	filters[hash] = filter;
+	const button = $("<button>", {type:"button", class:"close"}).append("&times;");
+	const li = $("<li>", {class: "list-group-item"}).append(filter.toString(), button)
+	button.click(function() {
+		delete filters[hash];
+		li.remove();
+	})
+	list.append(li);
 }
 
 function MenuFilter(col, rel, fVal, inverse=false) {
@@ -196,7 +214,12 @@ function MenuFilter(col, rel, fVal, inverse=false) {
 	*/
 	const prop = getProp(col);
 	const isQty = prop.type==="quant";
-	isQty ? fVal = new Qty(fVal) : "";
+	fVal = isQty ? new Qty(fVal) : fVal.toLowerCase();
+
+	this.col = col;
+	this.rel = rel;
+	this.fVal = fVal;
+	this.inverse = inverse;
 	
 	function allow(dish) {
 		const dVal = dish[prop.field];
@@ -204,7 +227,7 @@ function MenuFilter(col, rel, fVal, inverse=false) {
 			"="  : () => isQty ? dVal.eq(fVal) : dVal===fVal,
 			">"  : () => isQty ? dVal.gt(fVal) : dVal > fVal,
 			"<"  : () => isQty ? dVal.lt(fVal) : dVal < fVal,
-			"in" : () => (dVal.toString()).includes(fVal)
+			"contains" : () => (dVal.toString().toLowerCase()).includes(fVal)
 		}[rel]();
 		return inverse ? !pass : pass;
 	}
@@ -213,6 +236,18 @@ function MenuFilter(col, rel, fVal, inverse=false) {
 		return container.filter(allow);
 	}
 }
+
+MenuFilter.prototype.toString = function() {
+	const readRel = {
+		"="  : "is",
+		">"  : "greater than",
+		"<"  : "less than",
+		"contains" : "contains"
+	}[this.rel];
+	return [this.col, readRel, "\""+this.fVal+"\""].join(" ");
+}
+
+MenuFilter.prototype.reducer = (accum, curr) => curr.apply(accum);
 
 function sortData(col, ascending=true) {
 	const prop = getProp(col);
@@ -230,14 +265,51 @@ function sortData(col, ascending=true) {
 
 function registerHandlers() {
 	$("#col-list :input").click(colClickedHandler);
-	$("#submit-button").click(submitHandler);
-	$("#update-button").click(updateTable);
+	$("#update-btn").click(updateHandler);
+	$("#add-filter-btn").click(addFilterHandler);
+	$("#dc-selector").change(dataChanged);
+	$("#datepicker").change(dataChanged);
+	$("#sort-selector").change(sortChanged);
 
 	function submitHandler() {
 		const tid = tids[$("#dc-selector").val()];
 		const date = $("#datepicker").val();
-		new Request(tid, date).send(menu, updateTable);
+		resetData();
+		new Request(tid, date).send(menu, function() {
+			needRefresh = false;
+			updateTable();
+		});
 	};
+
+	function updateHandler() {
+		if (needRefresh) {
+			submitHandler()
+		}
+		else {
+			updateTable();
+		}
+	}
+
+	function updateTable() {
+		if (needSort){
+			runSort();
+		}
+		buildTable(Object.values(filters).reduce(MenuFilter.prototype.reducer, menu));
+		$("#collapse1").collapse("hide");
+	}
+
+	function runSort() {
+			sortData($("#sort-selector").val(),$("#sort-direction :radio:checked").val()=="true");
+			needSort = false;
+	}
+
+	function dataChanged() {
+		needRefresh = true;
+	}
+
+	function sortChanged() {
+		needSort = true;
+	}
 
 	function colClickedHandler(e) {
 		const col = $(this).val();
@@ -249,17 +321,27 @@ function registerHandlers() {
 			sortSelector.children(":contains('"+col+"')").remove();
 		}
 	};
+
+	function addFilterHandler() {
+		const col = $("#filter-col-selector").val();
+		const rel = $("#filter-rel-selector").val();
+		const val = $("#filter-val").val();
+
+		const filter = new MenuFilter(col, rel, val);
+		if (!filters.hasOwnProperty(filter.toString().hashCode())) {
+			addFilter(filter);
+		}
+	}
 }
 
 function init() {
 	$("#datepicker").datepicker();
 	// Sets the default date to today
-	$("#datepicker").datepicker("setDate", new Date("12/20/2017"));
+	$("#datepicker").datepicker("setDate", new Date());
 
 	initColumnOptions();
 	registerHandlers();
 	defaultColumns.map(clickColumnOption);
-	updateTable();
 }
 
 //});
