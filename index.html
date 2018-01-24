@@ -54,22 +54,17 @@
 									<label for="datepicker">Date:</label>
 									<input type="text" id="datepicker" size=8>
 								</div>
-								<br>
-								<div class="row">
-									<button onclick="submitHandler()">Submit</button>
-								</div>
 							</div>
 							<div class="col-sm-3">
 								<div class="row"><h3>Columns</h3></div>
 								<div class="row" id="col-list">
 								</div>
-								<button onclick="updateTable()">Update</button>
 							</div>
 							<div class="col-sm-3">
 								<div class="row"><h3>Sorting</h3></div>
 								<div class="row">
 									<select id="sort-selector">
-										<option label=" " selected="selected"></option>
+										<option value=" " selected></option>
 									</select>
 									<div id="sort-direction">
 										<div class="radio">
@@ -83,7 +78,48 @@
 							</div>
 							<div class="col-sm-3">
 								<div class="row"><h3>Filters</h3></div>
+								<div class="row">
+									<div class="col-xs-4">
+										<span class="pull-right">Column</span>
+									</div>
+									<div class="col-xs-8">
+										<select id="filter-col-selector">
+											<option value=" " selected disabled hidden></option>
+										</select>
+									</div>
+								</div>
+								<div class="row top-buffer">
+									<div class="col-xs-4">
+										<span class="pull-right">Relation</span>
+									</div>
+									<div class="col-xs-8">
+										<select id="filter-rel-selector">
+											<option value=" " selected disabled hidden></option>
+											<option>=</option>
+											<option><</option>
+											<option>></option>
+											<option>contains</option>
+										</select>
+									</div>
+								</div>
+								<div class="row top-buffer">
+									<div class="col-xs-4">
+										<span class="pull-right">Value</span>
+									</div>
+									<div class="col-xs-8">
+    									<input id="filter-val" type="text">
+									</div>
+								</div>
+								<div class="row text-center top-buffer">
+    								<button id="add-filter-btn" class="btn btn-default btn-sm">Add</button>
+								</div>
+								<div class="row top-buffer">
+									<ul id="filter-list" class="list-group"></ul>
+								</div>
 							</div>
+						</div>
+						<div class="row text-center">
+							<button id="update-btn" class="btn btn-success">Update</button>
 						</div>
 					</div>
 				</div>
