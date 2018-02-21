@@ -75,4 +75,9 @@ table.menu th {
   table.menu td:last-child {
     border-bottom: 0;
   }
+
+  /*
+  Removes the unnecessary padding added from styles.css on mobile vv
+  */
+  body { padding-bottom: 0;  }
 }

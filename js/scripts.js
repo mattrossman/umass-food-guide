@@ -76,6 +76,8 @@ Object.defineProperty(Request.prototype, "url", {
 // Container is the array that will hold the dishes
 // Callback will be run after all dishes have been saved
 Request.prototype.send = function(container, callback) {
+	const that = this;
+
 	$.get(this.url,
 		function (data) {
 			const menuObj = JSON.parse(data);
@@ -110,7 +112,7 @@ Request.prototype.send = function(container, callback) {
 		const dishObj = getImplicitData(element);
 		dishObj["data-meal"] = meal;
 		dishObj["data-section"] = sec;
-		dishObj["data-location"] = getKey(tids, this.tid);
+		dishObj["data-location"] = getKey(tids, that.tid);
 		return dishObj;
 	};
 };
@@ -306,6 +308,7 @@ function registerHandlers() {
 			runSort();
 		}
 		buildTable(Object.values(filters).reduce(MenuFilter.prototype.reducer, menu));
+		$("html, body").animate({ scrollTop: 0 }, 400);
 		$("#collapse1").collapse("hide");
 	}
 

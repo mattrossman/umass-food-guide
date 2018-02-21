@@ -47,39 +47,44 @@
 						<div class="row row-padded">
 							<div class="col-sm-3">
 								<div class="row"><h3>Data</h3></div>
-								<div class="row">
-									<label for="dc-selector">Choose a DC:</label>
-									<select id="dc-selector">
-										<option label=" " selected="selected"></option>
-										<option>Worcester</option>
-										<option>Franklin</option>
-										<option>Hampshire</option>
-										<option>Berkshire</option>
-									</select>
-								</div>
-								<br>
-								<div class="row">
-									<label for="datepicker">Date:</label>
-									<input type="text" id="datepicker" size=8>
+								<div class="col-sm-12">
+									<div class="row">
+										<label for="dc-selector">Choose a DC:</label>
+										<select id="dc-selector">
+											<!--<option label=" " selected="selected"></option>-->
+											<option>Hampshire</option>
+											<option>Berkshire</option>
+											<option>Worcester</option>
+											<option>Franklin</option>
+										</select>
+									</div>
+									<br>
+									<div class="row">
+										<label for="datepicker">Date:</label>
+										<input type="text" id="datepicker" size=8>
+									</div>
 								</div>
 							</div>
 							<div class="col-sm-3">
 								<div class="row"><h3>Columns</h3></div>
-								<div class="row" id="col-list">
+								<div class="col-sm-12">
+									<div class="row" id="col-list"></div>
 								</div>
 							</div>
 							<div class="col-sm-3">
 								<div class="row"><h3>Sorting</h3></div>
-								<div class="row">
-									<select id="sort-selector">
-										<option value=" " selected></option>
-									</select>
-									<div id="sort-direction">
-										<div class="radio">
-											<label><input type="radio" name="optradio" value=true>Ascending</label>
-										</div>
-										<div class="radio">
-											<label><input type="radio" name="optradio" value=false>Descending</label>
+								<div class="col-sm-12">
+									<div class="row">
+										<select id="sort-selector">
+											<option value=" " selected></option>
+										</select>
+										<div id="sort-direction">
+											<div class="radio">
+												<label><input type="radio" name="optradio" value=true>Ascending</label>
+											</div>
+											<div class="radio">
+												<label><input type="radio" name="optradio" value=false>Descending</label>
+											</div>
 										</div>
 									</div>
 								</div>
