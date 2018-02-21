@@ -1,4 +1,4 @@
-//$(document).ready(function(){
+$(document).ready(function(){
 
 /*
 Glossary and conventions
@@ -270,6 +270,17 @@ function registerHandlers() {
 	$("#dc-selector").change(dataChanged);
 	$("#datepicker").change(dataChanged);
 	$("#sort-selector").change(sortChanged);
+	$(document).keypress(function(e) {
+	    if(e.which == 13) {
+	    	if ($(e.target).is("#filter-val")) {
+		    	addFilterHandler();
+		    	$(e.target).blur();
+	    	}
+	    	else {
+	    		updateHandler();
+	    	}
+	    }
+	});
 
 	function submitHandler() {
 		const tid = tids[$("#dc-selector").val()];
@@ -344,4 +355,4 @@ function init() {
 	defaultColumns.map(clickColumnOption);
 }
 
-//});
+});
