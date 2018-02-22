@@ -14,6 +14,8 @@
 	<link rel="stylesheet" href="css/responsive_tables.css">
 	<link rel="stylesheet" href="https://code.jquery.com/ui/1.12.0/themes/smoothness/jquery-ui.css">
 	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.12.4/css/bootstrap-select.min.css">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.7.1/css/bootstrap-datepicker3.standalone.min.css">
 
 	<!-- Favicon stuff, courtesy of RealFaviconGenerator  -->
 	<link rel="apple-touch-icon" sizes="180x180" href="/images/favicon/apple-touch-icon.png">
@@ -47,39 +49,38 @@
 						<div class="row row-padded">
 							<div class="col-sm-3">
 								<div class="row"><h3>Data</h3></div>
-								<div class="row">
-									<label for="dc-selector">Choose a DC:</label>
-									<select id="dc-selector">
-										<option label=" " selected="selected"></option>
-										<option>Worcester</option>
-										<option>Franklin</option>
-										<option>Hampshire</option>
-										<option>Berkshire</option>
-									</select>
-								</div>
-								<br>
-								<div class="row">
-									<label for="datepicker">Date:</label>
-									<input type="text" id="datepicker" size=8>
+								<div class="col-sm-12">
+									<div class="row">
+										<div class="col-xs-6">
+											<div class="row">
+												<label for="datepicker">Date:</label>
+													<input class="form-control datepicker" type="text" id="datepicker" size=8>
+												</div>
+											</div>
+										</div>
+									<div class="row" id="dc-list"></div>
 								</div>
 							</div>
 							<div class="col-sm-3">
 								<div class="row"><h3>Columns</h3></div>
-								<div class="row" id="col-list">
+								<div class="col-sm-12">
+									<div class="row" id="col-list"></div>
 								</div>
 							</div>
 							<div class="col-sm-3">
 								<div class="row"><h3>Sorting</h3></div>
-								<div class="row">
-									<select id="sort-selector">
-										<option value=" " selected></option>
-									</select>
-									<div id="sort-direction">
-										<div class="radio">
-											<label><input type="radio" name="optradio" value=true>Ascending</label>
-										</div>
-										<div class="radio">
-											<label><input type="radio" name="optradio" value=false>Descending</label>
+								<div class="col-sm-12">
+									<div class="row">
+										<select class="sortpicker form-control" id="sort-selector">
+											<option value=" " selected>--None--</option>
+										</select>
+										<div id="sort-direction">
+											<div class="radio">
+												<label><input type="radio" name="optradio" value=true checked>Ascending</label>
+											</div>
+											<div class="radio">
+												<label><input type="radio" name="optradio" value=false>Descending</label>
+											</div>
 										</div>
 									</div>
 								</div>
@@ -87,21 +88,21 @@
 							<div class="col-sm-3">
 								<div class="row"><h3>Filters</h3></div>
 								<div class="row">
-									<div class="col-xs-4">
+									<div class="col-xs-3">
 										<span class="pull-right">Column</span>
 									</div>
-									<div class="col-xs-8">
-										<select id="filter-col-selector">
+									<div class="col-xs-9">
+										<select class="filterpicker form-control" id="filter-col-selector">
 											<option value=" " selected disabled hidden></option>
 										</select>
 									</div>
 								</div>
 								<div class="row top-buffer">
-									<div class="col-xs-4">
+									<div class="col-xs-3">
 										<span class="pull-right">Relation</span>
 									</div>
-									<div class="col-xs-8">
-										<select id="filter-rel-selector">
+									<div class="col-xs-9">
+										<select class="filterpicker form-control" id="filter-rel-selector">
 											<option value=" " selected disabled hidden></option>
 											<option>=</option>
 											<option><</option>
@@ -111,11 +112,12 @@
 									</div>
 								</div>
 								<div class="row top-buffer">
-									<div class="col-xs-4">
+									<div class="col-xs-3">
 										<span class="pull-right">Value</span>
 									</div>
-									<div class="col-xs-8">
-    									<input id="filter-val" type="text">
+									<div class="col-xs-9">
+    									<input id="filter-val" class="form-control input-sm" type="text">
+    									<!--<input id="filter-val" type="text">-->
 									</div>
 								</div>
 								<div class="row text-center top-buffer">
@@ -143,6 +145,9 @@
 <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
 <script src="https://code.jquery.com/ui/1.12.0/jquery-ui.min.js"></script>
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.12.4/js/bootstrap-select.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.7.1/js/bootstrap-datepicker.min.js"></script>
+
 <script src='js/quantities.js'></script>
 <script src="js/scripts.js"></script>
 </body>

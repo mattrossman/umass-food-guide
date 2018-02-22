@@ -32,7 +32,7 @@ const filters = {};
 let needRefresh = true;
 let needSort = false;
 
-const defaultColumns = ["Dish", "Calories", "Serving size", "Meal", "Section"]
+const defaultColumns = ["Dish", "Calories", "Location", "Serving size", "Meal", "Section"]
 
 const propList = [
 {title:"Dish", 			field:"data-dish-name",		type:"qual"},
@@ -76,6 +76,8 @@ Object.defineProperty(Request.prototype, "url", {
 // Container is the array that will hold the dishes
 // Callback will be run after all dishes have been saved
 Request.prototype.send = function(container, callback) {
+	const that = this;
+
 	$.get(this.url,
 		function (data) {
 			const menuObj = JSON.parse(data);
@@ -110,7 +112,7 @@ Request.prototype.send = function(container, callback) {
 		const dishObj = getImplicitData(element);
 		dishObj["data-meal"] = meal;
 		dishObj["data-section"] = sec;
-		dishObj["data-location"] = getKey(tids, this.tid);
+		dishObj["data-location"] = getKey(tids, that.tid);
 		return dishObj;
 	};
 };
@@ -172,24 +174,7 @@ function getProp(name) {
 }
 
 function clickColumnOption(col) {
-	$("#col-list label:contains("+col+") :first-child").click();
-}
-
-function initColumnOptions() {
-	const colList = $("#col-list");
-	const colSelect = $("#filter-col-selector");
-	for (prop of propList) {
-		colList.append($("<div>", {class:"checkbox"})
-			.append($("<label>")
-				.append($("<input>",
-				{
-					type:"checkbox",
-					class:"col-option",
-					value:prop.title
-				}))
-				.append(prop.title)));
-		colSelect.append($("<option>").append(prop.title));
-	};
+	$("#col-list label:contains("+col+") :first-child").prop("checked",true);
 }
 
 function addFilter(filter) {
@@ -197,7 +182,9 @@ function addFilter(filter) {
 	const hash = filter.toString().hashCode()
 	filters[hash] = filter;
 	const button = $("<button>", {type:"button", class:"close"}).append("&times;");
-	const li = $("<li>", {class: "list-group-item"}).append(filter.toString(), button)
+	const filterText = $("<p>", {class:"filter-lbl"}).append(filter.toString());
+	const li = $("<li>", {class: "list-group-item clearfix"}).append(filterText, button)
+	//const li = $("<li>", {class: "list-group-item clearfix"}).append(filter.toString(), button)
 	button.click(function() {
 		delete filters[hash];
 		li.remove();
@@ -249,27 +236,32 @@ MenuFilter.prototype.toString = function() {
 
 MenuFilter.prototype.reducer = (accum, curr) => curr.apply(accum);
 
-function sortData(col, ascending=true) {
-	const prop = getProp(col);
-	const field = prop.field;
-	menu.sort(function(a,b){
-		const aVal = a[field], bVal = b[field];
-		let compared;
-		if (prop.type==="quant")
-			compared = aVal.compareTo(bVal);
-		else
-			compared = aVal.localeCompare(bVal);
-		return (ascending ? 1 : -1)*compared;
-	});
+function sortedData(data) {
+	const col = $("#sort-selector").val()
+	if (col!=" ") {
+		const ascending = $("#sort-direction :radio:checked").val()=="true"
+		const prop = getProp(col);
+		const field = prop.field;
+		return data.concat().sort(function(a,b){
+			const aVal = a[field], bVal = b[field];
+			let compared;
+			if (prop.type==="quant")
+				compared = aVal.compareTo(bVal);
+			else
+				compared = aVal.localeCompare(bVal);
+			return (ascending ? 1 : -1)*compared;
+		});		
+	}
+	else { return data; }
 }
 
 function registerHandlers() {
-	$("#col-list :input").click(colClickedHandler);
+	$("#col-list :input").click(updateSortselector);
 	$("#update-btn").click(updateHandler);
 	$("#add-filter-btn").click(addFilterHandler);
 	$("#dc-selector").change(dataChanged);
+	$("#dc-list :input").click(dataChanged);
 	$("#datepicker").change(dataChanged);
-	$("#sort-selector").change(sortChanged);
 	$(document).keypress(function(e) {
 	    if(e.which == 13) {
 	    	if ($(e.target).is("#filter-val")) {
@@ -282,19 +274,32 @@ function registerHandlers() {
 	    }
 	});
 
-	function submitHandler() {
-		const tid = tids[$("#dc-selector").val()];
+	function refreshData(callback) {
 		const date = $("#datepicker").val();
+		const checkedTids = $("#dc-list input:checked").map(function(){
+			return tids[$(this).val()];
+		}).get()
+
 		resetData();
-		new Request(tid, date).send(menu, function() {
-			needRefresh = false;
-			updateTable();
-		});
+		let numReqs = checkedTids.length;
+		if (numReqs > 0) {
+			const partialCallback = function() {
+				--numReqs;
+				if (numReqs == 0) { callback() }
+			}
+			for (const tid of checkedTids) {
+				new Request(tid, date).send(menu, partialCallback);
+			}			
+		}
+		else { callback(); }
 	};
 
 	function updateHandler() {
 		if (needRefresh) {
-			submitHandler()
+			refreshData(function() {
+				needRefresh = false;
+				updateTable();
+			});
 		}
 		else {
 			updateTable();
@@ -302,36 +307,15 @@ function registerHandlers() {
 	}
 
 	function updateTable() {
-		if (needSort){
-			runSort();
-		}
-		buildTable(Object.values(filters).reduce(MenuFilter.prototype.reducer, menu));
+		const filteredMenu = Object.values(filters).reduce(MenuFilter.prototype.reducer, menu)
+		buildTable(sortedData(filteredMenu));
+		$("html, body").animate({ scrollTop: 0 }, 400);
 		$("#collapse1").collapse("hide");
-	}
-
-	function runSort() {
-			sortData($("#sort-selector").val(),$("#sort-direction :radio:checked").val()=="true");
-			needSort = false;
 	}
 
 	function dataChanged() {
 		needRefresh = true;
 	}
-
-	function sortChanged() {
-		needSort = true;
-	}
-
-	function colClickedHandler(e) {
-		const col = $(this).val();
-		const sortSelector = $("#sort-selector");
-		if ($(this).is(":checked")){
-			sortSelector.append($("<option>").append(col));
-		}
-		else {
-			sortSelector.children(":contains('"+col+"')").remove();
-		}
-	};
 
 	function addFilterHandler() {
 		const col = $("#filter-col-selector").val();
@@ -345,14 +329,74 @@ function registerHandlers() {
 	}
 }
 
+function updateSortselector() {
+	const sortSelector = $("#sort-selector");
+	sortSelector.children().slice(1).remove()
+	for (const col of getCheckedColumns()) {
+		sortSelector.append($("<option>").append(col));
+	}
+	$('.sortpicker').selectpicker("refresh");
+}
+
+function initColumnList() {
+	const colList = $("#col-list");
+	const colSelect = $("#filter-col-selector");
+	for (prop of propList) {
+		colList.append($("<div>", {class:"checkbox"})
+			.append($("<label>")
+				.append($("<input>",
+				{
+					type:"checkbox",
+					class:"col-option",
+					value:prop.title
+				}))
+				.append(prop.title)));
+		colSelect.append($("<option>").append(prop.title));
+	};
+}
+
+function initDcList() { 
+	const dcList = $("#dc-list");
+	for (const dc of ["Hampshire", "Berkshire", "Worcester", "Franklin"]) {
+		dcList.append($("<div>", {class:"checkbox"})
+			.append($("<label>")
+				.append($("<input>",
+				{
+					type:"checkbox",
+					value:dc
+				}))
+				.append(dc)));
+	}
+}
+
+function setupSelectpickers() {
+	$('.filterpicker').selectpicker({
+		liveSearch: true,
+		width: false,
+		noneSelectedText: "--None--",
+		hideDisabled: true
+	});
+	$('.sortpicker').selectpicker({
+		liveSearch: true,
+		width: "auto",
+		noneSelectedText: "--None--",
+		hideDisabled: true
+	});
+}
+
 function init() {
-	$("#datepicker").datepicker();
+	$("#datepicker").datepicker({
+	    autoclose: true
+	});
 	// Sets the default date to today
 	$("#datepicker").datepicker("setDate", new Date());
 
-	initColumnOptions();
+	initDcList();
+	initColumnList();
+	setupSelectpickers();
 	registerHandlers();
 	defaultColumns.map(clickColumnOption);
+	updateSortselector();
 }
 
 });
