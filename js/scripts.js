@@ -32,7 +32,7 @@ const filters = {};
 let needRefresh = true;
 let needSort = false;
 
-const defaultColumns = ["Dish", "Calories", "Serving size", "Meal", "Section"]
+const defaultColumns = ["Dish", "Calories", "Location", "Serving size", "Meal", "Section"]
 
 const propList = [
 {title:"Dish", 			field:"data-dish-name",		type:"qual"},
@@ -182,7 +182,9 @@ function addFilter(filter) {
 	const hash = filter.toString().hashCode()
 	filters[hash] = filter;
 	const button = $("<button>", {type:"button", class:"close"}).append("&times;");
-	const li = $("<li>", {class: "list-group-item"}).append(filter.toString(), button)
+	const filterText = $("<p>", {class:"filter-lbl"}).append(filter.toString());
+	const li = $("<li>", {class: "list-group-item clearfix"}).append(filterText, button)
+	//const li = $("<li>", {class: "list-group-item clearfix"}).append(filter.toString(), button)
 	button.click(function() {
 		delete filters[hash];
 		li.remove();
@@ -234,18 +236,23 @@ MenuFilter.prototype.toString = function() {
 
 MenuFilter.prototype.reducer = (accum, curr) => curr.apply(accum);
 
-function sortData(col, ascending=true) {
-	const prop = getProp(col);
-	const field = prop.field;
-	menu.sort(function(a,b){
-		const aVal = a[field], bVal = b[field];
-		let compared;
-		if (prop.type==="quant")
-			compared = aVal.compareTo(bVal);
-		else
-			compared = aVal.localeCompare(bVal);
-		return (ascending ? 1 : -1)*compared;
-	});
+function sortedData(data) {
+	const col = $("#sort-selector").val()
+	if (col!=" ") {
+		const ascending = $("#sort-direction :radio:checked").val()=="true"
+		const prop = getProp(col);
+		const field = prop.field;
+		return data.concat().sort(function(a,b){
+			const aVal = a[field], bVal = b[field];
+			let compared;
+			if (prop.type==="quant")
+				compared = aVal.compareTo(bVal);
+			else
+				compared = aVal.localeCompare(bVal);
+			return (ascending ? 1 : -1)*compared;
+		});		
+	}
+	else { return data; }
 }
 
 function registerHandlers() {
@@ -255,7 +262,6 @@ function registerHandlers() {
 	$("#dc-selector").change(dataChanged);
 	$("#dc-list :input").click(dataChanged);
 	$("#datepicker").change(dataChanged);
-	$("#sort-selector").change(sortChanged);
 	$(document).keypress(function(e) {
 	    if(e.which == 13) {
 	    	if ($(e.target).is("#filter-val")) {
@@ -301,25 +307,14 @@ function registerHandlers() {
 	}
 
 	function updateTable() {
-		if (needSort){
-			runSort();
-		}
-		buildTable(Object.values(filters).reduce(MenuFilter.prototype.reducer, menu));
+		const filteredMenu = Object.values(filters).reduce(MenuFilter.prototype.reducer, menu)
+		buildTable(sortedData(filteredMenu));
 		$("html, body").animate({ scrollTop: 0 }, 400);
 		$("#collapse1").collapse("hide");
 	}
 
-	function runSort() {
-			sortData($("#sort-selector").val(),$("#sort-direction :radio:checked").val()=="true");
-			needSort = false;
-	}
-
 	function dataChanged() {
 		needRefresh = true;
-	}
-
-	function sortChanged() {
-		needSort = true;
 	}
 
 	function colClickedHandler(e) {
@@ -381,19 +376,21 @@ function setupSelectpickers() {
 	$('.filterpicker').selectpicker({
 		liveSearch: true,
 		width: false,
-		noneSelectedText: "(none)",
+		noneSelectedText: "--None--",
 		hideDisabled: true
 	});
 	$('.sortpicker').selectpicker({
 		liveSearch: true,
 		width: "auto",
-		noneSelectedText: "(none)",
+		noneSelectedText: "--None--",
 		hideDisabled: true
 	});
 }
 
 function init() {
-	$("#datepicker").datepicker();
+	$("#datepicker").datepicker({
+	    autoclose: true
+	});
 	// Sets the default date to today
 	$("#datepicker").datepicker("setDate", new Date());
 
