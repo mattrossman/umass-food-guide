@@ -1,4 +1,4 @@
-//$(document).ready(function(){
+$(document).ready(function(){
 
 /*
 Glossary and conventions
@@ -174,7 +174,7 @@ function getProp(name) {
 }
 
 function clickColumnOption(col) {
-	$("#col-list label:contains("+col+") :first-child").click();
+	$("#col-list label:contains("+col+") :first-child").prop("checked",true);
 }
 
 function addFilter(filter) {
@@ -256,7 +256,7 @@ function sortedData(data) {
 }
 
 function registerHandlers() {
-	$("#col-list :input").click(colClickedHandler);
+	$("#col-list :input").click(updateSortselector);
 	$("#update-btn").click(updateHandler);
 	$("#add-filter-btn").click(addFilterHandler);
 	$("#dc-selector").change(dataChanged);
@@ -317,18 +317,6 @@ function registerHandlers() {
 		needRefresh = true;
 	}
 
-	function colClickedHandler(e) {
-		const col = $(this).val();
-		const sortSelector = $("#sort-selector");
-		if ($(this).is(":checked")){
-			sortSelector.append($("<option>").append(col));
-		}
-		else {
-			sortSelector.children(":contains('"+col+"')").remove();
-		}
-		$('.sortpicker').selectpicker("refresh");
-	};
-
 	function addFilterHandler() {
 		const col = $("#filter-col-selector").val();
 		const rel = $("#filter-rel-selector").val();
@@ -339,6 +327,15 @@ function registerHandlers() {
 			addFilter(filter);
 		}
 	}
+}
+
+function updateSortselector() {
+	const sortSelector = $("#sort-selector");
+	sortSelector.children().slice(1).remove()
+	for (const col of getCheckedColumns()) {
+		sortSelector.append($("<option>").append(col));
+	}
+	$('.sortpicker').selectpicker("refresh");
 }
 
 function initColumnList() {
@@ -399,6 +396,7 @@ function init() {
 	setupSelectpickers();
 	registerHandlers();
 	defaultColumns.map(clickColumnOption);
+	updateSortselector();
 }
 
-//});
+});
