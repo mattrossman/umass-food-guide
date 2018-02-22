@@ -1,4 +1,4 @@
-$(document).ready(function(){
+//$(document).ready(function(){
 
 /*
 Glossary and conventions
@@ -177,23 +177,6 @@ function clickColumnOption(col) {
 	$("#col-list label:contains("+col+") :first-child").click();
 }
 
-function initColumnOptions() {
-	const colList = $("#col-list");
-	const colSelect = $("#filter-col-selector");
-	for (prop of propList) {
-		colList.append($("<div>", {class:"checkbox"})
-			.append($("<label>")
-				.append($("<input>",
-				{
-					type:"checkbox",
-					class:"col-option",
-					value:prop.title
-				}))
-				.append(prop.title)));
-		colSelect.append($("<option>").append(prop.title));
-	};
-}
-
 function addFilter(filter) {
 	const list = $("#filter-list");
 	const hash = filter.toString().hashCode()
@@ -270,6 +253,7 @@ function registerHandlers() {
 	$("#update-btn").click(updateHandler);
 	$("#add-filter-btn").click(addFilterHandler);
 	$("#dc-selector").change(dataChanged);
+	$("#dc-list :input").click(dataChanged);
 	$("#datepicker").change(dataChanged);
 	$("#sort-selector").change(sortChanged);
 	$(document).keypress(function(e) {
@@ -284,19 +268,32 @@ function registerHandlers() {
 	    }
 	});
 
-	function submitHandler() {
-		const tid = tids[$("#dc-selector").val()];
+	function refreshData(callback) {
 		const date = $("#datepicker").val();
+		const checkedTids = $("#dc-list input:checked").map(function(){
+			return tids[$(this).val()];
+		}).get()
+
 		resetData();
-		new Request(tid, date).send(menu, function() {
-			needRefresh = false;
-			updateTable();
-		});
+		let numReqs = checkedTids.length;
+		if (numReqs > 0) {
+			const partialCallback = function() {
+				--numReqs;
+				if (numReqs == 0) { callback() }
+			}
+			for (const tid of checkedTids) {
+				new Request(tid, date).send(menu, partialCallback);
+			}			
+		}
+		else { callback(); }
 	};
 
 	function updateHandler() {
 		if (needRefresh) {
-			submitHandler()
+			refreshData(function() {
+				needRefresh = false;
+				updateTable();
+			});
 		}
 		else {
 			updateTable();
@@ -334,6 +331,7 @@ function registerHandlers() {
 		else {
 			sortSelector.children(":contains('"+col+"')").remove();
 		}
+		$('.sortpicker').selectpicker("refresh");
 	};
 
 	function addFilterHandler() {
@@ -348,14 +346,62 @@ function registerHandlers() {
 	}
 }
 
+function initColumnList() {
+	const colList = $("#col-list");
+	const colSelect = $("#filter-col-selector");
+	for (prop of propList) {
+		colList.append($("<div>", {class:"checkbox"})
+			.append($("<label>")
+				.append($("<input>",
+				{
+					type:"checkbox",
+					class:"col-option",
+					value:prop.title
+				}))
+				.append(prop.title)));
+		colSelect.append($("<option>").append(prop.title));
+	};
+}
+
+function initDcList() { 
+	const dcList = $("#dc-list");
+	for (const dc of ["Hampshire", "Berkshire", "Worcester", "Franklin"]) {
+		dcList.append($("<div>", {class:"checkbox"})
+			.append($("<label>")
+				.append($("<input>",
+				{
+					type:"checkbox",
+					value:dc
+				}))
+				.append(dc)));
+	}
+}
+
+function setupSelectpickers() {
+	$('.filterpicker').selectpicker({
+		liveSearch: true,
+		width: false,
+		noneSelectedText: "(none)",
+		hideDisabled: true
+	});
+	$('.sortpicker').selectpicker({
+		liveSearch: true,
+		width: "auto",
+		noneSelectedText: "(none)",
+		hideDisabled: true
+	});
+}
+
 function init() {
 	$("#datepicker").datepicker();
 	// Sets the default date to today
 	$("#datepicker").datepicker("setDate", new Date());
 
-	initColumnOptions();
+	initDcList();
+	initColumnList();
+	setupSelectpickers();
 	registerHandlers();
 	defaultColumns.map(clickColumnOption);
 }
 
-});
+//});
