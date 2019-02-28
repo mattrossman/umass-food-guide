@@ -69,7 +69,7 @@ function Request (tid, date) {
 
 // Dynamically form the AJAX URL for each request rather than storing redundant segments
 Object.defineProperty(Request.prototype, "url", {
-	get: function() { return `http://umassdining.com/foodpro-menu-ajax?
+	get: function() { return `https://umassdining.com/foodpro-menu-ajax?
 		tid=${this.tid}&date=${this.date}` }
 });
 
